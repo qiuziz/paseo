@@ -1,0 +1,90 @@
+# 在 macOS runner 上构建 custom/codex-ui 的桌面版并发布到 GitHub Release。
+#
+# 触发方式:
+#   - push 到 custom/codex-ui(sync-upstream.yml 同步完官方后会自动 push,或手动 push)
+#   - 手动 workflow_dispatch
+#
+# 无代码签名(用户选择起步方案):产出 unsigned dmg,首次安装需 右键→打开。
+# 若日后要签名,把证书放进 fork 的 GitHub Secrets,并在下面的 build 步骤去掉
+# CSC_IDENTITY_AUTO_DISCOVERY=false / -c.mac.notarize=false / -c.mac.identity=null,
+# 参照上游 .github/workflows/desktop-release.yml 的签名 env。
+
+name: Build Desktop
+
+on:
+  push:
+    branches:
+      - custom/codex-ui
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-desktop
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout custom/codex-ui
+        uses: actions/checkout@v4
+        with:
+          ref: custom/codex-ui
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@boudra"
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build unsigned desktop app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build:desktop -- --publish never --mac --arm64 \
+            -c.mac.notarize=false -c.mac.identity=null
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: paseo-custom-desktop-macos-arm64
+          path: packages/desktop/release/*
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./packages/desktop/package.json').version")"
+          tag="desktop-custom-v${version}-$(date -u +%Y%m%d.%H%M)"
+          if gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "Release $tag already exists, uploading with clobber"
+            gh release upload "$tag" packages/desktop/release/*.dmg \
+              --clobber --repo "${{ github.repository }}"
+          else
+            gh release create "$tag" \
+              packages/desktop/release/*.dmg \
+              --repo "${{ github.repository }}" \
+              --prerelease \
+              --title "Paseo $version (custom UI) — $(date -u +%Y-%m-%d)" \
+              --notes "custom/codex-ui 的 unsigned 桌面构建。
+
+- 源码:官方 getpaseo/paseo $version + 自定义 UI(会话侧边栏、单会话对话区)
+- 未签名:首次安装/打开需 右键 → 打开(或 \`xattr -cr /Applications/Paseo.app\`)
+- 安装包:packages/desktop/release/*.dmg"
+          fi

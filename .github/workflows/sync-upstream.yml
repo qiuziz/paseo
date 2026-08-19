@@ -1,0 +1,84 @@
+# 定期把上游 getpaseo/paseo 同步进本 fork:
+#   - fork main             = 官方 main 的干净镜像(无自定义改动,避免同步冲突)
+#   - custom/codex-ui       = 长期 UI 分支:官方最新 + 自定义 UI(会话侧边栏等)
+#
+# 冲突策略:custom/codex-ui 合并 main 时,若 rerere 缓存里有此前的解法会自动复用;
+# 否则 workflow 失败,需人工在本地把 main 合并进 custom/codex-ui 后推回。
+# 成功后 push custom/codex-ui 会触发 build-desktop.yml 自动构建。
+
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '23 3 * * *' # 每天 03:23 UTC(避开整点流量)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      # rerere 的解决记录存在 .git/rr-cache,用 actions/cache 跨 run 持久化,
+      # 这样已人工解过一次的冲突,后续上游再次改到同一块时会自动复用解法。
+      - name: Cache git rerere records
+        uses: actions/cache@v4
+        with:
+          path: .git/rr-cache
+          key: paseo-rr-cache
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config rerere.enabled true
+
+      - name: Merge upstream into fork main
+        run: |
+          git remote add upstream https://github.com/getpaseo/paseo.git
+          git fetch --depth=1 upstream main
+          if git merge-base --is-ancestor upstream/main main; then
+            echo "main already up to date with upstream"
+          else
+            git merge --no-edit --no-ff upstream/main
+            git push origin main
+            echo "main synced with upstream $(git rev-parse --short upstream/main)"
+          fi
+
+      - name: Merge main into custom/codex-ui
+        id: merge-ui
+        run: |
+          git fetch origin custom/codex-ui
+          git checkout custom/codex-ui
+          if ! git merge-base --is-ancestor main custom/codex-ui; then
+            if git merge --no-edit main; then
+              echo "merged cleanly"
+            else
+              # rerere 已自动尝试;统计仍标记为未解决(UU)的文件
+              unresolved=$(git diff --name-only --diff-filter=U | wc -l | tr -d ' ')
+              if [ "$unresolved" -gt 0 ]; then
+                echo "::error::custom/codex-ui 与上游冲突,$unresolved 个文件未解决。"
+                echo "::error::请在本地: git fetch fork; git checkout custom/codex-ui; git merge fork/main; 解完推回。"
+                git status --short | sed 's/^/::error::  /'
+                exit 1
+              fi
+              git add -u
+              git commit --no-edit -m "chore(app): merge upstream main into custom/codex-ui (rerere resolved)"
+            fi
+            git push origin custom/codex-ui
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "custom/codex-ui already contains main"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
