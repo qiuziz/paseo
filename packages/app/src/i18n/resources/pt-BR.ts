@@ -974,6 +974,9 @@ export const ptBR: TranslationResources = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "Sem sessões ativas",
+    },
     display: {
       trigger: "Preferências de exibição",
       heading: "Exibição",
@@ -981,6 +984,7 @@ export const ptBR: TranslationResources = {
         label: "Agrupamento",
         project: "Projeto",
         status: "Status",
+        recents: "Sessões",
       },
       titleSource: {
         label: "Título",

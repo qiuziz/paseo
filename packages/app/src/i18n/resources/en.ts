@@ -962,6 +962,9 @@ export const en = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "No active sessions",
+    },
     display: {
       trigger: "Display preferences",
       heading: "Display",
@@ -969,6 +972,7 @@ export const en = {
         label: "Grouping",
         project: "Project",
         status: "Status",
+        recents: "Sessions",
       },
       titleSource: {
         label: "Title",

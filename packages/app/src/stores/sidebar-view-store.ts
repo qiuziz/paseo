@@ -4,11 +4,11 @@ import { persist, type StateStorage } from "zustand/middleware";
 import { z } from "zod";
 import { createValidatedPersistStorage } from "@/storage/validated-persist-storage";
 
-export type SidebarGroupMode = "project" | "status";
+export type SidebarGroupMode = "project" | "status" | "recents";
 
 const SIDEBAR_VIEW_STORAGE_KEY = "sidebar-view";
 const LEGACY_SIDEBAR_GROUP_MODE_STORAGE_KEY = "sidebar-group-mode";
-const SIDEBAR_VIEW_STORE_VERSION = 2;
+const SIDEBAR_VIEW_STORE_VERSION = 3;
 
 interface SidebarViewStoreState {
   groupMode: SidebarGroupMode;
@@ -25,7 +25,7 @@ interface SidebarViewPersistedState {
   hostFilters: string[];
 }
 
-const SidebarGroupModeSchema = z.enum(["project", "status"]);
+const SidebarGroupModeSchema = z.enum(["project", "status", "recents"]);
 const SidebarViewPersistedStateSchema = z.strictObject({
   groupMode: SidebarGroupModeSchema.optional(),
   hostFilters: z.array(z.string()).optional(),
@@ -34,17 +34,6 @@ const SidebarViewPersistedStateSchema = z.strictObject({
 });
 
 type SidebarViewStorageState = z.infer<typeof SidebarViewPersistedStateSchema>;
-
-function readLegacyGroupMode(persistedState: SidebarViewStorageState): SidebarGroupMode | null {
-  const groupModeByServerId = persistedState.groupModeByServerId;
-  if (!groupModeByServerId) {
-    return null;
-  }
-
-  const modes = Object.values(groupModeByServerId);
-  if (modes.length === 0) return null;
-  return modes.includes("status") ? "status" : "project";
-}
 
 // Reads the host filter from any persisted shape: the current `hostFilters` array, or the
 // pre-v2 single `hostFilter` string (null/absent meant "all hosts").
@@ -60,20 +49,16 @@ function readHostFilters(persistedState: SidebarViewStorageState): string[] {
 }
 
 export function migrateSidebarViewState(persistedState: unknown): SidebarViewPersistedState {
+  // v3 makes the "Sessions" list the default grouping. Any previously-chosen grouping is
+  // intentionally reset: the user asked for the session list to be the sidebar's default
+  // after this change, and "project"/"status" remain reachable from the display menu.
   const result = SidebarViewPersistedStateSchema.safeParse(persistedState);
   if (!result.success) {
-    return { groupMode: "project", hostFilters: [] };
+    return { groupMode: "recents", hostFilters: [] };
   }
-  const state = result.data;
-
-  const legacyGroupMode = readLegacyGroupMode(state);
-  if (legacyGroupMode) {
-    return { groupMode: legacyGroupMode, hostFilters: [] };
-  }
-
   return {
-    groupMode: state.groupMode ?? "project",
-    hostFilters: readHostFilters(state),
+    groupMode: "recents",
+    hostFilters: readHostFilters(result.data),
   };
 }
 
@@ -96,7 +81,9 @@ export function createSidebarViewStorage(
 export const useSidebarViewStore = create<SidebarViewStoreState>()(
   persist(
     (set) => ({
-      groupMode: "project",
+      // "recents" (Sessions) is the new default — migration also forces it for previously-persisted
+      // state, but the in-memory default below is what first-run users see before hydration.
+      groupMode: "recents",
       hostFilters: [],
       setGroupMode: (mode) => set({ groupMode: mode }),
       toggleHostFilter: (serverId) =>

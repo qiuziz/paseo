@@ -959,6 +959,9 @@ export const ko: TranslationResources = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "활성 세션이 없습니다",
+    },
     display: {
       trigger: "표시 설정",
       heading: "표시",
@@ -966,6 +969,7 @@ export const ko: TranslationResources = {
         label: "그룹화",
         project: "프로젝트",
         status: "상태",
+        recents: "세션",
       },
       titleSource: {
         label: "제목",

@@ -34,6 +34,7 @@ import {
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
+import { SidebarRecentsList } from "@/components/sidebar/sidebar-recents-list";
 import { type GestureType } from "react-native-gesture-handler";
 import * as Clipboard from "expo-clipboard";
 import {
@@ -70,7 +71,7 @@ import {
   type SidebarWorkspacePlacement,
 } from "@/hooks/use-sidebar-workspaces-list";
 import { useSidebarOrderStore } from "@/stores/sidebar-order-store";
-import { useSidebarViewStore } from "@/stores/sidebar-view-store";
+import { useSidebarViewStore, type SidebarGroupMode } from "@/stores/sidebar-view-store";
 import { useShowShortcutBadges } from "@/hooks/use-show-shortcut-badges";
 import {
   ContextMenu,
@@ -239,7 +240,7 @@ interface SidebarWorkspaceListProps {
   collapsedProjectKeys: ReadonlySet<string>;
   onToggleProjectCollapsed: (projectViewKey: string) => void;
   shortcutIndexByWorkspaceKey: Map<string, number>;
-  groupMode: "project" | "status";
+  groupMode: SidebarGroupMode;
   isRefreshing?: boolean;
   onRefresh?: () => void;
   onWorkspacePress?: () => void;
@@ -1952,8 +1953,12 @@ export function SidebarWorkspaceList({
     projects: statusProjectIconTargets,
   });
 
-  const content =
-    groupMode === "status" ? (
+  if (groupMode === "recents") {
+    return <SidebarRecentsList onWorkspacePress={onWorkspacePress} />;
+  }
+
+  if (groupMode === "status") {
+    return (
       <SidebarStatusModeWrapper
         statusGroups={statusGroups}
         pinnedGroups={pinnedGroups}
@@ -1966,29 +1971,30 @@ export function SidebarWorkspaceList({
         onToggleWorkspacePin={onToggleWorkspacePin}
         listHeaderComponent={listHeaderComponent}
       />
-    ) : (
-      <ProjectModeList
-        projects={projects}
-        pinnedGroups={pinnedGroups}
-        workspaceEntriesByKey={workspaceEntriesByKey}
-        collapsedProjectKeys={collapsedProjectKeys}
-        onToggleProjectCollapsed={onToggleProjectCollapsed}
-        shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
-        onWorkspacePress={onWorkspacePress}
-        onAddProject={onAddProject}
-        listFooterComponent={listFooterComponent}
-        listHeaderComponent={listHeaderComponent}
-        parentGestureRef={parentGestureRef}
-        dragGestureHostPresented={dragGestureHostPresented}
-        pathname={pathname}
-        hostBadgeByServerId={hostBadgeByServerId}
-        supportsMultiplicityByServerId={supportsMultiplicityByServerId}
-        supportsPinningByServerId={supportsPinningByServerId}
-        onToggleWorkspacePin={onToggleWorkspacePin}
-      />
     );
+  }
 
-  return content;
+  return (
+    <ProjectModeList
+      projects={projects}
+      pinnedGroups={pinnedGroups}
+      workspaceEntriesByKey={workspaceEntriesByKey}
+      collapsedProjectKeys={collapsedProjectKeys}
+      onToggleProjectCollapsed={onToggleProjectCollapsed}
+      shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
+      onWorkspacePress={onWorkspacePress}
+      onAddProject={onAddProject}
+      listFooterComponent={listFooterComponent}
+      listHeaderComponent={listHeaderComponent}
+      parentGestureRef={parentGestureRef}
+      dragGestureHostPresented={dragGestureHostPresented}
+      pathname={pathname}
+      hostBadgeByServerId={hostBadgeByServerId}
+      supportsMultiplicityByServerId={supportsMultiplicityByServerId}
+      supportsPinningByServerId={supportsPinningByServerId}
+      onToggleWorkspacePin={onToggleWorkspacePin}
+    />
+  );
 }
 
 function SidebarStatusModeWrapper({

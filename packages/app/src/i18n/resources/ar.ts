@@ -952,6 +952,9 @@ export const ar: TranslationResources = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "لا توجد جلسات نشطة",
+    },
     display: {
       trigger: "تفضيلات العرض",
       heading: "العرض",
@@ -959,6 +962,7 @@ export const ar: TranslationResources = {
         label: "التجميع",
         project: "المشروع",
         status: "الحالة",
+        recents: "الجلسات",
       },
       titleSource: {
         label: "العنوان",

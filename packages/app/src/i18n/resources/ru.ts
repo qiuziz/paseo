@@ -974,6 +974,9 @@ export const ru: TranslationResources = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "Нет активных сессий",
+    },
     display: {
       trigger: "Настройки отображения",
       heading: "Отображение",
@@ -981,6 +984,7 @@ export const ru: TranslationResources = {
         label: "Группировка",
         project: "Проект",
         status: "Статус",
+        recents: "Сессии",
       },
       titleSource: {
         label: "Заголовок",
