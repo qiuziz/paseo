@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { View, Text, Pressable, ScrollView, type PressableStateCallbackType } from "react-native";
 import { NestableScrollContainer } from "react-native-draggable-flatlist";
@@ -80,8 +80,10 @@ const SidebarRecentRow = memo(function SidebarRecentRow({
  */
 export const SidebarRecentsList = memo(function SidebarRecentsList({
   onWorkspacePress,
+  listHeaderComponent,
 }: {
   onWorkspacePress?: () => void;
+  listHeaderComponent?: ReactElement | null;
 }) {
   const { t } = useTranslation();
   const recents = useAgentRecents();
@@ -120,7 +122,7 @@ export const SidebarRecentsList = memo(function SidebarRecentsList({
     return result;
   }, [recents]);
 
-  const content =
+  const body =
     recents.length === 0 ? (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>{t("sidebar.recents.empty")}</Text>
@@ -147,6 +149,17 @@ export const SidebarRecentsList = memo(function SidebarRecentsList({
         ))}
       </>
     );
+
+  // The sidebar header (where the display-preferences menu's trigger lives) must stay on screen
+  // in every grouping mode, or switching back out of Sessions would be impossible.
+  const content = listHeaderComponent ? (
+    <>
+      {listHeaderComponent}
+      {body}
+    </>
+  ) : (
+    body
+  );
 
   if (platformIsNative) {
     return (

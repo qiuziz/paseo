@@ -2005,8 +2005,15 @@ export function SidebarWorkspaceList({
 
   // Recents mode renders its own list, independent of the grouped status rows and the label
   // filter — it must early-return before the content projection so it never shares that UI.
+  // The sidebar header still rides along so the display-preferences menu (the way back out of
+  // Sessions grouping) stays reachable.
   if (groupMode === "recents") {
-    return <SidebarRecentsList onWorkspacePress={onWorkspacePress} />;
+    return (
+      <SidebarRecentsList
+        onWorkspacePress={onWorkspacePress}
+        listHeaderComponent={listHeaderComponent}
+      />
+    );
   }
 
   // Project mode is the one that keeps its project headers; every other grouping mode is a flat

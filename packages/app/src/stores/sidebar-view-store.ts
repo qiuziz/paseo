@@ -9,9 +9,9 @@ export type SidebarGroupMode = "project" | "status" | "recents";
 
 const SIDEBAR_VIEW_STORAGE_KEY = "sidebar-view";
 const LEGACY_SIDEBAR_GROUP_MODE_STORAGE_KEY = "sidebar-group-mode";
-// 6 forces migrateSidebarViewState for previously-persisted state, resetting groupMode to
-// "recents" (the user-chosen default). Upstream is 5; keep 6 when merging upstream changes.
-const SIDEBAR_VIEW_STORE_VERSION = 6;
+// 7 forces migrateSidebarViewState for previously-persisted state, resetting groupMode to
+// "recents" (the user-chosen default). Upstream is 5; keep 7 when merging upstream changes.
+const SIDEBAR_VIEW_STORE_VERSION = 7;
 
 /**
  * The key standing for "this workspace carries no labels at all".
@@ -70,17 +70,6 @@ const SidebarViewPersistedStateSchema = z.strictObject({
 
 type SidebarViewStorageState = z.infer<typeof SidebarViewPersistedStateSchema>;
 
-function readLegacyGroupMode(persistedState: SidebarViewStorageState): SidebarGroupMode | null {
-  const groupModeByServerId = persistedState.groupModeByServerId;
-  if (!groupModeByServerId) {
-    return null;
-  }
-
-  const modes = Object.values(groupModeByServerId);
-  if (modes.length === 0) return null;
-  return modes.includes("status") ? "status" : "project";
-}
-
 // Reads the host filter from any persisted shape: the current `hostFilters` array, or the
 // pre-v2 single `hostFilter` string (null/absent meant "all hosts").
 function readHostFilters(persistedState: SidebarViewStorageState): string[] {
@@ -103,19 +92,11 @@ export function migrateSidebarViewState(persistedState: unknown): SidebarViewPer
 
   // The user asked for the Sessions list to become the sidebar's default, so any previously
   // persisted grouping is intentionally reset to "recents"; project/status/label stay reachable
-  // from the display menu.
-  const legacyGroupMode = readLegacyGroupMode(state);
-  if (legacyGroupMode) {
-    return { groupMode: "recents", hostFilters: [], labelFilter: emptyLabelFilter() };
-  }
-
-  let groupMode: SidebarGroupMode = "project";
-  if (state.groupMode === "recents" || state.groupMode === "status") {
-    groupMode = state.groupMode;
-  }
-
+  // from the display menu. This resets both the legacy groupModeByServerId shape and the
+  // newer flat `groupMode` value (v6 stored "project"/"status" verbatim, which defeated the
+  // reset). Host/label filters are preserved; only the grouping changes.
   return {
-    groupMode,
+    groupMode: "recents",
     hostFilters: readHostFilters(state),
     labelFilter: state.labelFilter
       ? normalizeSidebarLabelFilter(state.labelFilter)
