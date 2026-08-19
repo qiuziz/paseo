@@ -45,7 +45,6 @@ import {
   useWindowChromeCorners,
   type WindowChromeCorners,
 } from "@/utils/desktop-window";
-import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import {
   computeTabDropPreview,
   type TabDropPreview,
@@ -65,10 +64,6 @@ import {
   WorkspacePaneContent,
   type WorkspacePaneContentModel,
 } from "@/screens/workspace/workspace-pane-content";
-import {
-  WorkspaceDesktopTabsRow,
-  type WorkspaceDesktopTabRowItem,
-} from "@/screens/workspace/workspace-desktop-tabs-row";
 import type { TerminalProfile } from "@getpaseo/protocol/messages";
 import {
   WorkspaceTabPresentationResolver,
@@ -1060,39 +1055,11 @@ function SplitPaneView({
   normalizedServerId,
   normalizedWorkspaceId,
   isWorkspaceFocused,
-  hoveredCloseTabKey,
-  setHoveredCloseTabKey,
-  closingTabIds,
-  onNavigateTab,
-  onCloseTab,
-  onCopyResumeCommand,
-  onCopyAgentId,
-  onCopyTerminalId,
-  onCopyFilePath,
-  onReloadAgent,
-  onRenameTab,
-  onCloseTabsToLeft,
-  onCloseTabsToRight,
-  onCloseOtherTabs,
-  onCreateDraftTab,
-  onCreateTerminalTab,
-  onCreateBrowserTab,
-  showCreateBrowserTab,
   buildPaneContentModel,
   onFocusPane,
-  onSplitPane: _onSplitPane,
-  onSplitPaneEmpty: _onSplitPaneEmpty,
-  onReorderTabsInPane,
   renderPaneEmptyState,
-  activeDragTabId,
   showDropZones,
   dropPreview,
-  tabDropPreview,
-  explorerPaneId,
-  maximizedPaneId,
-  onTogglePaneMaximized,
-  focusModeEnabled,
-  onExitFocusMode,
 }: SplitPaneViewProps) {
   const { theme: _theme } = useUnistyles();
   const paneRef = useRef<View | null>(null);
@@ -1123,16 +1090,6 @@ function SplitPaneView({
   const mountedPaneTabIds = useMemo(
     () => paneTabIds.filter((tabId) => mountedTabIds.has(tabId)),
     [mountedTabIds, paneTabIds],
-  );
-  const desktopTabRowItems = useMemo<WorkspaceDesktopTabRowItem[]>(
-    () =>
-      paneTabs.map((tab) => ({
-        tab,
-        isActive: tab.key === activeTabDescriptor?.key,
-        isCloseHovered: hoveredCloseTabKey === tab.key,
-        isClosingTab: closingTabIds.has(tab.tabId),
-      })),
-    [activeTabDescriptor?.key, closingTabIds, hoveredCloseTabKey, paneTabs],
   );
 
   useEffect(() => {
@@ -1169,72 +1126,16 @@ function SplitPaneView({
     };
   }, [stableOnFocusPane, pane.id]);
 
-  const paneId = pane.id;
-  const handleCloseTabsToLeft = useCallback(
-    (tabId: string) => onCloseTabsToLeft(tabId, paneTabs),
-    [onCloseTabsToLeft, paneTabs],
-  );
-  const handleCloseTabsToRight = useCallback(
-    (tabId: string) => onCloseTabsToRight(tabId, paneTabs),
-    [onCloseTabsToRight, paneTabs],
-  );
-  const handleCloseOtherTabs = useCallback(
-    (tabId: string) => onCloseOtherTabs(tabId, paneTabs),
-    [onCloseOtherTabs, paneTabs],
-  );
-  const handleReorderTabs = useCallback(
-    (nextTabs: WorkspaceTabDescriptor[]) => {
-      onReorderTabsInPane(
-        paneId,
-        nextTabs.map((tab) => tab.tabId),
-      );
-    },
-    [onReorderTabsInPane, paneId],
-  );
-  const handleToggleMaximized = useCallback(
-    () => onTogglePaneMaximized(paneId),
-    [onTogglePaneMaximized, paneId],
-  );
   return (
     <RenderProfile id={`SplitPaneView:${pane.id}`}>
       <View ref={paneRef} collapsable={false} style={styles.pane}>
-        <WindowChromeSafeArea placement="inline" style={styles.paneTabs}>
-          <TitlebarDragRegion />
-          <WorkspaceDesktopTabsRow
-            paneId={pane.id}
-            isFocused={isFocused && isWorkspaceFocused}
-            tabs={desktopTabRowItems}
-            normalizedServerId={normalizedServerId}
-            normalizedWorkspaceId={normalizedWorkspaceId}
-            setHoveredCloseTabKey={setHoveredCloseTabKey}
-            onNavigateTab={onNavigateTab}
-            onCloseTab={onCloseTab}
-            onCopyResumeCommand={onCopyResumeCommand}
-            onCopyAgentId={onCopyAgentId}
-            onCopyTerminalId={onCopyTerminalId}
-            onCopyFilePath={onCopyFilePath}
-            onReloadAgent={onReloadAgent}
-            onRenameTab={onRenameTab}
-            onCloseTabsToLeft={handleCloseTabsToLeft}
-            onCloseTabsToRight={handleCloseTabsToRight}
-            onCloseOtherTabs={handleCloseOtherTabs}
-            onCreateDraftTab={onCreateDraftTab}
-            onCreateTerminalTab={onCreateTerminalTab}
-            onCreateBrowserTab={onCreateBrowserTab}
-            showCreateBrowserTab={showCreateBrowserTab}
-            onReorderTabs={handleReorderTabs}
-            externalDndContext
-            activeDragTabId={activeDragTabId}
-            tabDropPreviewIndex={
-              tabDropPreview?.paneId === pane.id ? tabDropPreview.indicatorIndex : null
-            }
-            showPaneMaximizeAction={pane.id === explorerPaneId && !focusModeEnabled}
-            paneMaximized={pane.id === maximizedPaneId}
-            onTogglePaneMaximized={handleToggleMaximized}
-            focusModeEnabled={Boolean(focusModeEnabled)}
-            onExitFocusMode={onExitFocusMode}
-          />
-        </WindowChromeSafeArea>
+        {/*
+          The tab bar that used to live here is intentionally gone: recents-style navigation
+          in the left sidebar replaces tabbed multi-session management in the conversation area.
+          The pane keeps its tab state internally for routing/content selection, but no longer
+          renders the row. WindowChromeSafeArea / TitlebarDragRegion are dropped too — there
+          is nothing for the drag region to anchor against anymore.
+        */}
 
         <View style={styles.paneContent}>
           {mountedPaneTabIds.length > 0

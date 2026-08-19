@@ -1039,6 +1039,9 @@ export const es: TranslationResources = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "No hay sesiones activas",
+    },
     display: {
       trigger: "Preferencias de visualización",
       heading: "Visualización",
@@ -1047,6 +1050,7 @@ export const es: TranslationResources = {
         project: "Proyecto",
         status: "Estado",
         labels: "Etiquetas",
+        recents: "Sesiones",
       },
       titleSource: {
         label: "Título",

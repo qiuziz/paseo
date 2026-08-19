@@ -102,5 +102,9 @@ function buildWorkspaceGroups(
       return statusWorkspaceGroups(
         buildStatusGroups(unpinnedWorkspaces, input.projectNamesByViewKey),
       );
+    // Recents renders its own list in SidebarWorkspaceList and never reaches the projection;
+    // returning the same empty group set as project mode keeps this exhaustive.
+    case "recents":
+      return [];
   }
 }

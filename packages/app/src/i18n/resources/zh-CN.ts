@@ -997,6 +997,9 @@ export const zhCN: TranslationResources = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "暂无活跃会话",
+    },
     display: {
       trigger: "显示偏好",
       heading: "显示",
@@ -1005,6 +1008,7 @@ export const zhCN: TranslationResources = {
         project: "项目",
         status: "状态",
         labels: "标签",
+        recents: "会话",
       },
       titleSource: {
         label: "标题",

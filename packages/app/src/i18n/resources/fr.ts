@@ -1039,6 +1039,9 @@ export const fr: TranslationResources = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "Aucune session active",
+    },
     display: {
       trigger: "Préférences d'affichage",
       heading: "Affichage",
@@ -1047,6 +1050,7 @@ export const fr: TranslationResources = {
         project: "Projet",
         status: "Statut",
         labels: "Libellés",
+        recents: "Sessions",
       },
       titleSource: {
         label: "Titre",

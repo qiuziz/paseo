@@ -1014,6 +1014,9 @@ export const en = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "No active sessions",
+    },
     display: {
       trigger: "Display preferences",
       heading: "Display",
@@ -1022,6 +1025,7 @@ export const en = {
         project: "Project",
         status: "Status",
         labels: "Labels",
+        recents: "Sessions",
       },
       titleSource: {
         label: "Title",

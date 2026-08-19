@@ -35,6 +35,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
 import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
+import { SidebarRecentsList } from "@/components/sidebar/sidebar-recents-list";
 import { type GestureType } from "react-native-gesture-handler";
 import * as Clipboard from "expo-clipboard";
 import {
@@ -2001,6 +2002,12 @@ export function SidebarWorkspaceList({
   // trigger lives, so filtering the last row away closed the menu you were filtering from.
   const labelFilterEmpty =
     hasActiveLabelFilter && hasProjectsBeforeLabelFilter && projects.length === 0;
+
+  // Recents mode renders its own list, independent of the grouped status rows and the label
+  // filter — it must early-return before the content projection so it never shares that UI.
+  if (groupMode === "recents") {
+    return <SidebarRecentsList onWorkspacePress={onWorkspacePress} />;
+  }
 
   // Project mode is the one that keeps its project headers; every other grouping mode is a flat
   // list of grouped rows, so a new mode lands in the grouped branch rather than silently in this

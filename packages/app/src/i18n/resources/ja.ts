@@ -1017,6 +1017,9 @@ export const ja: TranslationResources = {
     },
   },
   sidebar: {
+    recents: {
+      empty: "アクティブなセッションがありません",
+    },
     display: {
       trigger: "表示設定",
       heading: "表示",
@@ -1025,6 +1028,7 @@ export const ja: TranslationResources = {
         project: "プロジェクト",
         status: "ステータス",
         labels: "ラベル",
+        recents: "セッション",
       },
       titleSource: {
         label: "タイトル",

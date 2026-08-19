@@ -5,11 +5,13 @@ import { z } from "zod";
 import { workspaceLabelKey } from "@getpaseo/protocol/workspace-labels";
 import { createValidatedPersistStorage } from "@/storage/validated-persist-storage";
 
-export type SidebarGroupMode = "project" | "status";
+export type SidebarGroupMode = "project" | "status" | "recents";
 
 const SIDEBAR_VIEW_STORAGE_KEY = "sidebar-view";
 const LEGACY_SIDEBAR_GROUP_MODE_STORAGE_KEY = "sidebar-group-mode";
-const SIDEBAR_VIEW_STORE_VERSION = 5;
+// 6 forces migrateSidebarViewState for previously-persisted state, resetting groupMode to
+// "recents" (the user-chosen default). Upstream is 5; keep 6 when merging upstream changes.
+const SIDEBAR_VIEW_STORE_VERSION = 6;
 
 /**
  * The key standing for "this workspace carries no labels at all".
@@ -54,7 +56,7 @@ interface SidebarViewPersistedState {
   labelFilter: SidebarLabelFilter;
 }
 
-const PersistedSidebarGroupModeSchema = z.enum(["project", "status", "label"]);
+const PersistedSidebarGroupModeSchema = z.enum(["project", "status", "label", "recents"]);
 const SidebarLabelFilterSchema = z.object({
   labels: z.array(z.string()),
 });
@@ -95,17 +97,25 @@ function readHostFilters(persistedState: SidebarViewStorageState): string[] {
 export function migrateSidebarViewState(persistedState: unknown): SidebarViewPersistedState {
   const result = SidebarViewPersistedStateSchema.safeParse(persistedState);
   if (!result.success) {
-    return { groupMode: "project", hostFilters: [], labelFilter: emptyLabelFilter() };
+    return { groupMode: "recents", hostFilters: [], labelFilter: emptyLabelFilter() };
   }
   const state = result.data;
 
+  // The user asked for the Sessions list to become the sidebar's default, so any previously
+  // persisted grouping is intentionally reset to "recents"; project/status/label stay reachable
+  // from the display menu.
   const legacyGroupMode = readLegacyGroupMode(state);
   if (legacyGroupMode) {
-    return { groupMode: legacyGroupMode, hostFilters: [], labelFilter: emptyLabelFilter() };
+    return { groupMode: "recents", hostFilters: [], labelFilter: emptyLabelFilter() };
+  }
+
+  let groupMode: SidebarGroupMode = "project";
+  if (state.groupMode === "recents" || state.groupMode === "status") {
+    groupMode = state.groupMode;
   }
 
   return {
-    groupMode: state.groupMode === "status" ? "status" : "project",
+    groupMode,
     hostFilters: readHostFilters(state),
     labelFilter: state.labelFilter
       ? normalizeSidebarLabelFilter(state.labelFilter)
@@ -141,7 +151,7 @@ export function createSidebarViewStorage(
 export const useSidebarViewStore = create<SidebarViewStoreState>()(
   persist(
     (set) => ({
-      groupMode: "project",
+      groupMode: "recents",
       hostFilters: [],
       labelFilter: emptyLabelFilter(),
       setGroupMode: (mode) => set({ groupMode: mode }),
